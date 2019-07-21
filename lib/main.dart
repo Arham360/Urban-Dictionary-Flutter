@@ -92,14 +92,26 @@ class ListModel extends Model {
   }
 
   void sortResults(SortType sortType) {
-    if(sortType == SortType.thumbsUp){
+    if (sortType == SortType.thumbsUp) {
       results.sort((a, b) {
-        return a.thumbsUp.compareTo(b.thumbsUp);
+        return b.thumbsUp.compareTo(a.thumbsUp);
       });
-    }else{
+    } else {
       results.sort((a, b) {
-        return a.thumbsDown.compareTo(b.thumbsDown);
+        return b.thumbsDown.compareTo(a.thumbsDown);
       });
+    }
+
+    for(var s in results){
+      print(s.thumbsUp);
+    }
+
+    for(var s in results){
+      print(s.definition);
+    }
+
+    for(var s in results){
+      print(s.thumbsDown);
     }
   }
 }
@@ -194,13 +206,16 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       body: Padding(
         padding: EdgeInsets.only(
-            top: padding.height * 0.2,
-            left: padding.width * 0.05,
-            right: padding.width * 0.05),
-        child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              Align(
+            left: padding.width * 0.05, right: padding.width * 0.05),
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: Container(
+                height: padding.height * 0.2,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Align(
                 child: Text(
                   "Urban Dictionary",
                   style: TextStyle(
@@ -212,7 +227,9 @@ class _HomePageState extends State<HomePage> {
                 ),
                 alignment: Alignment.topLeft,
               ),
-              Padding(
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: TextField(
                   onSubmitted: (value) {
@@ -224,10 +241,13 @@ class _HomePageState extends State<HomePage> {
                       hintText: "Search",
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(5.0)))),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(5.0)))),
                 ),
               ),
-              ScopedModelDescendant<ListModel>(
+            ),
+            SliverToBoxAdapter(
+              child: ScopedModelDescendant<ListModel>(
                 builder: (context, child, model) => Row(
                   children: <Widget>[
                     Expanded(
@@ -248,18 +268,49 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
+            ),
+//        ScopedModelDescendant<ListModel>(
+//            builder: (context, child, model) => (model.isLoading)
+//                ? CircularProgressIndicator()
+//                : SliverList(delegate: SliverChildListDelegate([
+//              ListView.builder(
+//                  shrinkWrap: true,
+//                  itemCount: model.results.length,
+//                  itemBuilder: (BuildContext ctxt, int index) {
+//                    return DictionaryCards(model.results[index]);
+//                  }),
+//            ]))
+//        )
+            new SliverList(
+              delegate: new SliverChildListDelegate(
+                [
               ScopedModelDescendant<ListModel>(
-                builder: (context, child, model) => (model.isLoading)
-                    ? CircularProgressIndicator()
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: model.results.length,
-                        itemBuilder: (BuildContext ctxt, int index) {
-                          return DictionaryCards(model.results[index]);
-                        }),
-              )
-            ],
-          ),
+              builder: (context, child, model) => (model.isLoading)
+                  ? CircularProgressIndicator()
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: model.results.length,
+                      itemBuilder: (BuildContext ctxt, int index) {
+                        return DictionaryCards(model.results[index]);
+                      }),
+            )
+                ]
+              ),
+            ),
+
+
+
+//            ScopedModelDescendant<ListModel>(
+//              builder: (context, child, model) => (model.isLoading)
+//                  ? CircularProgressIndicator()
+//                  : ListView.builder(
+//                      shrinkWrap: true,
+//                      itemCount: model.results.length,
+//                      itemBuilder: (BuildContext ctxt, int index) {
+//                        return DictionaryCards(model.results[index]);
+//                      }),
+//            )
+          ],
         ),
       ),
     );
