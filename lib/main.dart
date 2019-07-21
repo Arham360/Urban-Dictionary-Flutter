@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:http/http.dart';
 
 void main() => runApp(MyApp());
 
@@ -20,28 +24,87 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class ListModel extends Model{
+enum SortType { thumbsUp, thumbsDown }
 
-  String apiKey;
+class ListModel extends Model {
+  String apiKey = "c2b70ca814msha095de06eb2970ap1745bfjsncc9a52f177ad";
 
   List<Result> results = List();
 
-  initData(){
-    results.add(Result("Arham", "Baddest Bitch of them all"));
+  SortType sortType;
+
+  bool isLoading = false;
+
+  initData() {
+    sortType = SortType.thumbsUp;
+    results.add(Result(name: "Arham", definition: "stuff"));
+    notifyListeners();
   }
 
+  _makeGetRequest(String query) async {
+    isLoading = true;
+    results.clear();
+    notifyListeners();
 
+    String url =
+        'https://mashape-community-urban-dictionary.p.rapidapi.com/define?term=$query';
+    Response response = await get(
+      url,
+      headers: {"X-RapidAPI-Key": apiKey},
+    );
 
+    int statusCode = response.statusCode; // todo handle errors
+
+    Map<String, String> headers = response.headers;
+
+    //String contentType = headers['content-type'];
+    String json = response.body;
+
+    parseJson(json);
+  }
+
+  void parseJson(String jsonData) {
+    var parsedJson = json.decode(jsonData);
+
+    var list = parsedJson["list"] as List;
+
+    for (var r in list) {
+      var result = Result.fromJson(r);
+      results.add(result);
+    }
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  flipSort() {
+    if (sortType == SortType.thumbsUp) {
+      sortType = SortType.thumbsDown;
+    } else {
+      sortType = SortType.thumbsUp;
+    }
+    notifyListeners();
+  }
 }
 
 class Result {
   String name;
   String definition;
+  int thumbsUp;
+  int thumbsDown;
 
-  Result(this.name, this.definition);
+  Result({this.name, this.definition, this.thumbsUp, this.thumbsDown});
+
+  factory Result.fromJson(Map<String, dynamic> json) {
+    return Result(
+        name: json["word"],
+        definition: json["definition"],
+        thumbsUp: json["thumbs_up"],
+        thumbsDown: json["thumbs_down"]);
+  }
 }
 
-class DictionaryCards extends StatelessWidget{
+class DictionaryCards extends StatelessWidget {
   Result result;
 
   DictionaryCards(this.result);
@@ -51,13 +114,46 @@ class DictionaryCards extends StatelessWidget{
     return Card(
       child: Column(
         children: <Widget>[
-          Text(result.name, style: TextStyle(fontSize: 25,),),
-          Text(result.definition, style: TextStyle(fontSize: 15),),
+          Text(
+            result.name,
+            style: TextStyle(
+              fontSize: 25,
+            ),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 10),
+            child: Text(
+              result.definition,
+              style: TextStyle(fontSize: 15),
+            ),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(Icons.thumb_up),
+                  Text(result.thumbsUp.toString()),
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Icon(Icons.thumb_down),
+                  Text(result.thumbsDown.toString()),
+                ],
+              )
+            ],
+          )
         ],
       ),
     );
   }
-
 }
 
 class HomePage extends StatefulWidget {
@@ -80,8 +176,10 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
-        padding:
-        EdgeInsets.only(top: padding.height * 0.2, left: padding.width * 0.05, right: padding.width * 0.05),
+        padding: EdgeInsets.only(
+            top: padding.height * 0.2,
+            left: padding.width * 0.05,
+            right: padding.width * 0.05),
         child: Column(
           children: <Widget>[
             Align(
@@ -99,31 +197,49 @@ class _HomePageState extends State<HomePage> {
             Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
               child: TextField(
-                onChanged: (value) {},
+                onSubmitted: (value) {
+                  ScopedModel.of<ListModel>(context)._makeGetRequest(value);
+                },
                 controller: editingController,
                 decoration: InputDecoration(
                     labelText: "Search here",
                     hintText: "Search",
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.all(Radius.circular(5.0)))),
+                        borderRadius: BorderRadius.all(Radius.circular(5.0)))),
               ),
             ),
-
-            Row(
-              children: <Widget>[
-                IconButton(icon: Icon(Icons.thumb_up), onPressed: null),
-                IconButton(icon: Icon(Icons.thumb_down), onPressed: null),
-              ],
-            ),
-
             ScopedModelDescendant<ListModel>(
-              builder: (context, child, model) => ListView.builder(shrinkWrap: true , itemCount: model.results.length,itemBuilder: (BuildContext ctxt, int index) {
-                return DictionaryCards(model.results[index]);
-              }),
+              builder: (context, child, model) => Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Container(),
+                  ),
+                  IconButton(
+                      icon: Icon(Icons.thumb_up,
+                          color: (model.sortType == SortType.thumbsUp)
+                              ? Colors.red
+                              : Colors.grey),
+                      onPressed: () => model.flipSort()),
+                  IconButton(
+                      icon: Icon(Icons.thumb_down,
+                          color: (model.sortType == SortType.thumbsDown)
+                              ? Colors.red
+                              : Colors.grey),
+                      onPressed: () => model.flipSort()),
+                ],
+              ),
+            ),
+            ScopedModelDescendant<ListModel>(
+              builder: (context, child, model) => (model.isLoading)
+                  ? CircularProgressIndicator()
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: model.results.length,
+                      itemBuilder: (BuildContext ctxt, int index) {
+                        return DictionaryCards(model.results[index]);
+                      }),
             )
-
           ],
         ),
       ),

@@ -1,0 +1,4 @@
+#Sat Jul 20 20:03:54 EDT 2019
+base.0=/Users/arhamakbar/Desktop/flutterProjects/Urban-Dictionary-Flutter/build/app/intermediates/transforms/dexMerger/debug/0
+path.0=classes.dex
+renamed.0=classes.dex
