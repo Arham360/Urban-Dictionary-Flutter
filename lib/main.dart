@@ -67,6 +67,7 @@ class ListModel extends Model {
     var parsedJson = json.decode(jsonData);
 
     var list = parsedJson["list"] as List;
+    print(list.length.toString());
 
     for (var r in list) {
       var result = Result.fromJson(r);
@@ -196,67 +197,69 @@ class _HomePageState extends State<HomePage> {
             top: padding.height * 0.2,
             left: padding.width * 0.05,
             right: padding.width * 0.05),
-        child: Column(
-          children: <Widget>[
-            Align(
-              child: Text(
-                "Urban Dictionary",
-                style: TextStyle(
-                  fontSize: 30,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 1.5,
+        child: SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              Align(
+                child: Text(
+                  "Urban Dictionary",
+                  style: TextStyle(
+                    fontSize: 30,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                alignment: Alignment.topLeft,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: TextField(
+                  onSubmitted: (value) {
+                    ScopedModel.of<ListModel>(context)._makeGetRequest(value);
+                  },
+                  controller: editingController,
+                  decoration: InputDecoration(
+                      labelText: "Search here",
+                      hintText: "Search",
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(5.0)))),
                 ),
               ),
-              alignment: Alignment.topLeft,
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: TextField(
-                onSubmitted: (value) {
-                  ScopedModel.of<ListModel>(context)._makeGetRequest(value);
-                },
-                controller: editingController,
-                decoration: InputDecoration(
-                    labelText: "Search here",
-                    hintText: "Search",
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(5.0)))),
+              ScopedModelDescendant<ListModel>(
+                builder: (context, child, model) => Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(),
+                    ),
+                    IconButton(
+                        icon: Icon(Icons.thumb_up,
+                            color: (model.sortType == SortType.thumbsUp)
+                                ? Colors.red
+                                : Colors.grey),
+                        onPressed: () => model.flipSort()),
+                    IconButton(
+                        icon: Icon(Icons.thumb_down,
+                            color: (model.sortType == SortType.thumbsDown)
+                                ? Colors.red
+                                : Colors.grey),
+                        onPressed: () => model.flipSort()),
+                  ],
+                ),
               ),
-            ),
-            ScopedModelDescendant<ListModel>(
-              builder: (context, child, model) => Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Container(),
-                  ),
-                  IconButton(
-                      icon: Icon(Icons.thumb_up,
-                          color: (model.sortType == SortType.thumbsUp)
-                              ? Colors.red
-                              : Colors.grey),
-                      onPressed: () => model.flipSort()),
-                  IconButton(
-                      icon: Icon(Icons.thumb_down,
-                          color: (model.sortType == SortType.thumbsDown)
-                              ? Colors.red
-                              : Colors.grey),
-                      onPressed: () => model.flipSort()),
-                ],
-              ),
-            ),
-            ScopedModelDescendant<ListModel>(
-              builder: (context, child, model) => (model.isLoading)
-                  ? CircularProgressIndicator()
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: model.results.length,
-                      itemBuilder: (BuildContext ctxt, int index) {
-                        return DictionaryCards(model.results[index]);
-                      }),
-            )
-          ],
+              ScopedModelDescendant<ListModel>(
+                builder: (context, child, model) => (model.isLoading)
+                    ? CircularProgressIndicator()
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: model.results.length,
+                        itemBuilder: (BuildContext ctxt, int index) {
+                          return DictionaryCards(model.results[index]);
+                        }),
+              )
+            ],
+          ),
         ),
       ),
     );
