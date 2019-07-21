@@ -73,17 +73,33 @@ class ListModel extends Model {
       results.add(result);
     }
 
+    sortResults(sortType);
+
     isLoading = false;
     notifyListeners();
   }
 
   flipSort() {
+    print(sortType);
     if (sortType == SortType.thumbsUp) {
       sortType = SortType.thumbsDown;
     } else {
       sortType = SortType.thumbsUp;
     }
+    sortResults(sortType);
     notifyListeners();
+  }
+
+  void sortResults(SortType sortType) {
+    if(sortType == SortType.thumbsUp){
+      results.sort((a, b) {
+        return a.thumbsUp.compareTo(b.thumbsUp);
+      });
+    }else{
+      results.sort((a, b) {
+        return a.thumbsDown.compareTo(b.thumbsDown);
+      });
+    }
   }
 }
 
